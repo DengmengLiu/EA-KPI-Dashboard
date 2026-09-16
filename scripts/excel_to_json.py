@@ -120,6 +120,19 @@ for name in preferred:
 if ws is None:
     ws = wb.active
 print(f"  Sheet: {ws.title!r}  ({ws.max_row} rows, {ws.max_column} cols)")
+print(f"  All sheets in workbook: {wb.sheetnames}")
+
+# Print first row (headers) so you can verify column mapping
+header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+if header_row:
+    print("  Column headers (1-indexed):")
+    for i, h in enumerate(header_row, 1):
+        print(f"    Col {i:2d}: {h}")
+
+# Print first data row as a sanity check
+first_data = next(ws.iter_rows(min_row=2, max_row=2, values_only=True), None)
+if first_data:
+    print(f"  First data row sample: Date={first_data[0]}  Region={first_data[1]}  AccID={first_data[2]}")
 
 # ── Parse rows ────────────────────────────────────────────────────────────────
 rows_by_date_region = defaultdict(list)
@@ -163,7 +176,16 @@ if not all_dates:
 
 latest  = all_dates[-1]
 prev_wk = all_dates[-2] if len(all_dates) >= 2 else latest
-prev_mo = all_dates[-5] if len(all_dates) >= 5 else all_dates[0]
+
+# prev_mo: find the date closest to 28 days before latest
+from datetime import timedelta
+latest_dt = datetime.strptime(latest, "%Y-%m-%d")
+target_mo = latest_dt - timedelta(days=28)
+prev_mo   = min(all_dates, key=lambda d: abs((datetime.strptime(d, "%Y-%m-%d") - target_mo).days))
+# Make sure prev_mo is not the same as latest or prev_wk
+if prev_mo == latest and len(all_dates) >= 3:
+    prev_mo = all_dates[-3]
+
 print(f"  Latest={latest}  PrevWk={prev_wk}  PrevMo={prev_mo}")
 
 # ── Compute KPI summary for one region + date ─────────────────────────────────
@@ -244,14 +266,17 @@ for region in SUB_REGIONS:
                 }
 
 # ── Assemble & write ──────────────────────────────────────────────────────────
+# IMPORTANT: sums must be at the TOP LEVEL of DATA (not inside fixed)
+# The dashboard JS reads DATA.sums, DATA.fixed.kpis, DATA.fixed.ts separately
 DATA = {
-    "measures": MEASURES, "cats": CATS,
-    "regions": ["APAC"] + SUB_REGIONS,
+    "measures": MEASURES,
+    "cats":     CATS,
+    "regions":  ["APAC"] + SUB_REGIONS,
     "fixed": {
         "ts":   {"latest": latest, "prev_wk": prev_wk, "prev_mo": prev_mo, "all": all_dates},
         "kpis": kpis,
-        "sums": sums,
     },
+    "sums": sums,   # top-level, NOT inside fixed
     "accs": accs,
 }
 
