@@ -113,7 +113,7 @@ print(f"Loading {EXCEL_PATH} ...")
 wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
 
 ws = None
-preferred = ["Data","data","KPI","kpi","Sheet1","Sheet 1","Ops","ops"]
+preferred = ["Impact KPI_Fixed Baseline","Impact KPI_Dynamic Baseline","Data","data","KPI","kpi","Ops","ops"]
 for name in preferred:
     if name in wb.sheetnames:
         ws = wb[name]; break
