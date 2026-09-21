@@ -1,0 +1,11 @@
+# Temporary and archive data
+data/Archive/
+*.zip
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS generated
+.DS_Store
+Thumbs.db
